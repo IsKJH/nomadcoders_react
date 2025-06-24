@@ -1,93 +1,30 @@
 import './App.css';
 import {useEffect, useState} from "react";
+import Movie from "./components/Movie";
 
 function App() {
     const [loading, setLoading] = useState(true);
-    const [coins, setCoins] = useState([]);
-    const [myCoins, setMyCoins] = useState([]);
-    const [budget, setBudget] = useState(0);
-    const [selectCoin, setSelectCoin] = useState([]);
-
+    const [movies, setMovies] = useState([]);
+    const getMovies = async () => {
+        const json = await ((await fetch(`https://yts.mx/api/v2/list_movies.json?minimum_rating=8.8&sort_by=year`)).json());
+        setMovies(json.data.movies);
+        setLoading(false);
+    }
     useEffect(() => {
-        fetch("https://api.coinpaprika.com/v1/tickers").then(
-            (response) => response.json()).then((json) => {
-            setCoins(json);
-            setLoading(false);
-            setSelectCoin(json[0]);
-        });
+        getMovies();
     }, []);
+    console.log(movies);
 
-    const onChangeSelectCoin = (e) => {
-        const selectedCoin = coins.find((coin) => coin.id === e.target.value);
-        setSelectCoin(selectedCoin);
-    }
-
-    const onChangeBudget = (e) => {
-        setBudget(e.target.value);
-    };
-
-    const onClickBuyCoin = () => {
-        const coinPrice = selectCoin.quotes.USD.price;
-        const coinAmount = budget / coinPrice;
-        const existingCoinIndex = myCoins.findIndex(coin => coin.id === selectCoin.id);
-        if (existingCoinIndex >= 0) {
-            const updatedCoins = [...myCoins];
-            updatedCoins[existingCoinIndex] = {
-                ...updatedCoins[existingCoinIndex],
-                amount: updatedCoins[existingCoinIndex].amount + coinAmount,
-                investedAmount: updatedCoins[existingCoinIndex].investedAmount + parseFloat(budget)
-            }
-            setMyCoins(updatedCoins);
-        } else {
-            const purchaseInfo = {
-                ...selectCoin,
-                amount: coinAmount,
-                investedAmount: parseFloat(budget)
-            }
-            setMyCoins([purchaseInfo, ...myCoins]);
-        }
-        setBudget(0);
-    }
-
-    return (
-
-        <div className="App">
-            <div>
-                <h1>The Coins! ({coins.length})</h1>
-                {loading ? <strong>Loading...</strong> :
-                    <select onChange={onChangeSelectCoin}>
-                        {coins.map((coin) => (
-                            <option value={coin.id}
-                                    key={coin.id}>{coin.name} ({coin.symbol}): {coin.quotes.USD.price}</option>
-                        ))}
-                    </select>}
-                <div>
-                    <input value={budget} onChange={onChangeBudget} placeholder="$ 예산을 입력하세요."/>
-                    <button onClick={onClickBuyCoin} disabled={budget === 0}>구매</button>
-                </div>
-                <div>
-                    <table style={{margin: "0 auto"}}>
-                    <thead>
-                        <tr>
-                            <th>이름</th>
-                            <th>개수</th>
-                            <th>구매 총 가격</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {myCoins.map((coin, index) => (
-                            <tr key={index}>
-                                <td>{coin.name}</td>
-                                <td>{coin.amount}</td>
-                                <td>{coin.investedAmount}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    );
+    return (< div
+        className="App">
+        {loading ? <h1>loading...</h1> : <div>
+            {movies.map((movie) => (
+                <Movie key={movie.id} coverImg={movie.medium_cover_image}
+                       title={movie.title}
+                       summary={movie.summary}
+                       genres={movie.genres}/>))}
+        </div>}
+    </div>);
 }
 
 export default App;
